@@ -75,7 +75,7 @@
     }
 
     .coin-display {
-      font-size: 40px;
+      font-size: 36px;
       font-weight: 900;
       color: #ffd700;
       margin: 10px 0;
@@ -192,17 +192,17 @@
       display: flex;
       align-items: center;
       gap: 4px;
+      white-space: nowrap;
     }
   </style>
 </head>
 <body>
 
   <div class="container">
-    
     <div class="level-container">
       <div class="level-header">
         <span id="lvlName">LVL 1: Новичок</span>
-        <span id="lvlRatio">0 ֏ / 5000 ֏</span>
+        <span id="lvlRatio">0 ֏ / 10,000 ֏</span>
       </div>
       <div class="progress-bar-bg">
         <div class="progress-bar-fill" id="lvlProgress"></div>
@@ -213,7 +213,7 @@
 
     <div class="header-stats">
       <div>⚡ Доход: <strong id="profit" style="color:#4caf50">0</strong> ֏/ч</div>
-      <div>🔋 Энергия: <strong id="energy">1000</strong>/1000</div>
+      <div>🔋 Энергия: <strong id="energy">500</strong>/500</div>
     </div>
 
     <div class="coin-display"><span id="coins">0</span> ֏</div>
@@ -226,12 +226,13 @@
 
     <div id="tab-tasks" class="tab-content">
       <h3>🎯 Игровые Задания</h3>
-      <p style="font-size: 12px; color: #aaa; margin-bottom: 15px;">Накапливайте баланс и получайте бонусные награды!</p>
+      <p style="font-size: 12px; color: #aaa; margin-bottom: 15px;">Проходите сложные этапы накопления для бонусов!</p>
       <div id="tasksList"></div>
     </div>
 
     <div id="tab-shop" class="tab-content">
       <h3>⭐ Магазин Telegram Stars</h3>
+      <p style="font-size: 12px; color: #aaa; margin-bottom: 15px;">Ускоряйте фарм, восстанавливайте энергию и увеличивайте доход!</p>
       <div id="starsShopList"></div>
     </div>
 
@@ -242,7 +243,7 @@
 
     <div id="tab-ref" class="tab-content">
       <h3>Пригласи Друзей</h3>
-      <p style="font-size: 13px; color: #aaa;">Получайте +5,000 ֏ за каждого друга!</p>
+      <p style="font-size: 13px; color: #aaa;">Получайте +2,500 ֏ за каждого друга!</p>
       <div style="margin: 20px 0;">Приглашено: <strong id="refCount">0</strong></div>
       <button class="btn-action" style="width: 100%; padding: 12px;" onclick="copyRefLink()">Скопировать ссылку</button>
     </div>
@@ -275,37 +276,45 @@
     const userId = tg.initDataUnsafe.user?.id || 123456;
     const startParam = tg.initDataUnsafe.start_param || null;
 
-    let state = { coins: 0, energy: 1000, maxEnergy: 1000, profitPerHour: 0, isVip: false, referralsCount: 0 };
+    let state = { 
+      coins: 0, 
+      energy: 500, 
+      maxEnergy: 500, 
+      profitPerHour: 0, 
+      isVip: false, 
+      referralsCount: 0,
+      clickPower: 1,
+      hasAutoBot: false,
+      starsMultiplier: 1
+    };
+    
     let cardsData = {};
-    let starsShopData = {};
-
     let completedTasks = JSON.parse(localStorage.getItem(`completed_tasks_${userId}`) || '[]');
 
+    const LOCAL_STARS_SHOP = [
+      { id: 'vip_pass', name: '⭐ VIP Статус (+50% к Доходу)', desc: 'Повышает всю прибыль на 50% и дает VIP значок', stars: 50, apply: () => { state.isVip = true; } },
+      { id: 'turbo_click', name: '⚡ Турбо Кликер (+3 к клику)', desc: 'Прибавляет +3 ֏ к каждому клику', stars: 25, apply: () => { state.clickPower += 3; } },
+      { id: 'miner_boost_1.5x', name: '📈 Ускоритель Майнинга (1.5x)', desc: 'Увеличивает весь доход в час в 1.5 раза', stars: 75, apply: () => { state.starsMultiplier *= 1.5; } },
+      { id: 'auto_bot_basic', name: '🤖 Авто-Бот Фармер', desc: 'Автоматически добывает монеты капли за каплей', stars: 100, apply: () => { state.hasAutoBot = true; } },
+      { id: 'energy_pack', name: '🔋 Запас Энергии +1500', desc: 'Увеличивает объем батареи до 2000 ед.', stars: 35, apply: () => { state.maxEnergy += 1500; state.energy += 1500; } }
+    ];
+
     const GAME_TASKS = [
-      { id: 'reach_1k', title: 'Накопить 1,000 ֏', target: 1000, reward: 250 },
-      { id: 'reach_2k', title: 'Накопить 2,000 ֏', target: 2000, reward: 500 },
-      { id: 'reach_5k', title: 'Накопить 5,000 ֏', target: 5000, reward: 1500 },
-      { id: 'reach_10k', title: 'Накопить 10,000 ֏', target: 10000, reward: 3000 },
-      { id: 'reach_25k', title: 'Накопить 25,000 ֏', target: 25000, reward: 6000 },
-      { id: 'reach_50k', title: 'Накопить 50,000 ֏', target: 50000, reward: 10000 },
-      { id: 'reach_75k', title: 'Накопить 75,000 ֏', target: 75000, reward: 15000 },
-      { id: 'reach_100k', title: 'Накопить 100,000 ֏', target: 100000, reward: 25000 },
-      { id: 'reach_250k', title: 'Накопить 250,000 ֏', target: 250000, reward: 50000 },
-      { id: 'reach_500k', title: 'Накопить 500,000 ֏', target: 500000, reward: 100000 },
-      { id: 'reach_750k', title: 'Накопить 750,000 ֏', target: 750000, reward: 150000 },
-      { id: 'reach_1m', title: 'Накопить 1,000,000 ֏', target: 1000000, reward: 250000 },
-      { id: 'reach_2m', title: 'Накопить 2,000,000 ֏', target: 2000000, reward: 500000 },
-      { id: 'reach_5m', title: 'Накопить 5,000,000 ֏', target: 5000000, reward: 1250000 },
-      { id: 'reach_10m', title: 'Накопить 10,000,000 ֏', target: 10000000, reward: 3000000 },
-      { id: 'reach_20m', title: 'Накопить 20,000,000 ֏', target: 20000000, reward: 7000000 }
+      { id: 'reach_5k', title: 'Накопить 5,000 ֏', target: 5000, reward: 500 },
+      { id: 'reach_25k', title: 'Накопить 25,000 ֏', target: 25000, reward: 2500 },
+      { id: 'reach_100k', title: 'Накопить 100,000 ֏', target: 100000, reward: 10000 },
+      { id: 'reach_500k', title: 'Накопить 500,000 ֏', target: 500000, reward: 35000 },
+      { id: 'reach_1m', title: 'Накопить 1,000,000 ֏', target: 1000000, reward: 75000 },
+      { id: 'reach_5m', title: 'Накопить 5,000,000 ֏', target: 5000000, reward: 250000 },
+      { id: 'reach_10m', title: 'Накопить 10,000,000 ֏', target: 10000000, reward: 600000 }
     ];
 
     const LEVEL_THRESHOLDS = [
-      { lvl: 1, name: 'LVL 1: Новичок', max: 5000, icon: '🪙' },
-      { lvl: 2, name: 'LVL 2: Боец', max: 20000, icon: '💵' },
-      { lvl: 3, name: 'LVL 3: Мастер', max: 100000, icon: '💶' },
-      { lvl: 4, name: 'LVL 4: Грандмастер', max: 500000, icon: '💷' },
-      { lvl: 5, name: 'LVL 5: Легенда', max: 2000000, icon: '💳' },
+      { lvl: 1, name: 'LVL 1: Новичок', max: 10000, icon: '🪙' },
+      { lvl: 2, name: 'LVL 2: Боец', max: 50000, icon: '💵' },
+      { lvl: 3, name: 'LVL 3: Мастер', max: 250000, icon: '💶' },
+      { lvl: 4, name: 'LVL 4: Грандмастер', max: 1000000, icon: '💷' },
+      { lvl: 5, name: 'LVL 5: Легенда', max: 5000000, icon: '💳' },
       { lvl: 6, name: 'LVL 6: Лорд Kombat', max: Infinity, icon: '👑' }
     ];
 
@@ -317,9 +326,8 @@
           body: JSON.stringify({ userId, referrerId: startParam })
         });
         const data = await res.json();
-        state = data.user;
-        cardsData = data.cardsConfig;
-        starsShopData = data.starsShop;
+        state = { ...state, ...data.user };
+        cardsData = data.cardsConfig || {};
         
         updateUI();
         renderCards();
@@ -330,9 +338,11 @@
 
     function updateUI() {
       const currentCoins = Math.floor(state.coins);
-      document.getElementById('coins').innerText = currentCoins;
+      document.getElementById('coins').innerText = currentCoins.toLocaleString();
       document.getElementById('energy').innerText = state.energy;
-      document.getElementById('profit').innerText = state.profitPerHour;
+      
+      const effectiveProfit = Math.floor(state.profitPerHour * (state.isVip ? 1.5 : 1) * state.starsMultiplier);
+      document.getElementById('profit').innerText = effectiveProfit.toLocaleString();
       document.getElementById('refCount').innerText = state.referralsCount || 0;
 
       let currentLvl = LEVEL_THRESHOLDS[0];
@@ -351,20 +361,20 @@
       document.getElementById('tapBtn').innerText = currentLvl.icon;
 
       if (currentLvl.max === Infinity) {
-        document.getElementById('lvlRatio').innerText = `${currentCoins} ֏ (MAX)`;
+        document.getElementById('lvlRatio').innerText = `${currentCoins.toLocaleString()} ֏ (MAX)`;
         document.getElementById('lvlProgress').style.width = '100%';
       } else {
         const progressCoins = currentCoins - prevThreshold;
         const totalCoinsNeeded = currentLvl.max - prevThreshold;
         const percent = Math.min(100, Math.max(0, (progressCoins / totalCoinsNeeded) * 100));
 
-        document.getElementById('lvlRatio').innerText = `${currentCoins} ֏ / ${currentLvl.max} ֏`;
+        document.getElementById('lvlRatio').innerText = `${currentCoins.toLocaleString()} ֏ / ${currentLvl.max.toLocaleString()} ֏`;
         document.getElementById('lvlProgress').style.width = `${percent}%`;
       }
 
       const badge = document.getElementById('vipBadge');
       if (state.isVip) {
-        badge.innerText = '⭐ VIP АКТИВЕН (x2 КЛИК)';
+        badge.innerText = '⭐ VIP АКТИВЕН';
         badge.classList.add('active');
       } else {
         badge.innerText = '⭐ VIP НЕ АКТИВЕН';
@@ -379,7 +389,9 @@
 
     tapBtn.addEventListener('click', async (e) => {
       if (state.energy > 0) {
-        const earned = state.isVip ? 2 : 1;
+        const multiplier = state.isVip ? 1.5 : 1;
+        const earned = Math.round(state.clickPower * multiplier);
+        
         state.coins += earned;
         state.energy -= 1;
         updateUI();
@@ -417,14 +429,14 @@
         } else if (canClaim) {
           btnHTML = `<button class="btn-action" onclick="claimTask('${task.id}', ${task.reward})">Забрать</button>`;
         } else {
-          btnHTML = `<button class="btn-action" disabled>${Math.floor(state.coins)}/${task.target}</button>`;
+          btnHTML = `<button class="btn-action" disabled>${Math.floor(state.coins).toLocaleString()}/${task.target.toLocaleString()}</button>`;
         }
 
         container.innerHTML += `
           <div class="task-card">
             <div>
               <strong>${task.title}</strong><br>
-              <small style="color:#ffd700">Награда: +${task.reward} ֏</small>
+              <small style="color:#ffd700">Награда: +${task.reward.toLocaleString()} ֏</small>
             </div>
             ${btnHTML}
           </div>
@@ -440,49 +452,44 @@
 
       state.coins += reward;
       updateUI();
-      alert(`Вы успешно получили +${reward} ֏!`);
+      alert(`Вы успешно получили +${reward.toLocaleString()} ֏!`);
     }
 
     function renderShop() {
       const container = document.getElementById('starsShopList');
       container.innerHTML = '';
-      for (const key in starsShopData) {
-        const item = starsShopData[key];
+      
+      LOCAL_STARS_SHOP.forEach(item => {
         container.innerHTML += `
           <div class="shop-card">
             <div>
-              <strong>${item.name}</strong>
+              <strong>${item.name}</strong><br>
+              <small style="color:#aaa">${item.desc}</small>
             </div>
             <button class="btn-stars" onclick="buyWithStars('${item.id}')">
               ⭐ ${item.stars}
             </button>
           </div>
         `;
-      }
+      });
     }
 
     async function buyWithStars(itemId) {
+      const item = LOCAL_STARS_SHOP.find(i => i.id === itemId);
+      if (!item) return;
+
       if (tg.openInvoice) {
-        tg.openInvoice('https://t.me/invoice/example', async (status) => {
+        tg.openInvoice(`https://t.me/invoice/${itemId}`, async (status) => {
           if (status === 'paid') {
-            await confirmStarsPurchase(itemId);
+            item.apply();
+            updateUI();
+            alert(`Успешно куплено: ${item.name}!`);
           }
         });
       } else {
-        await confirmStarsPurchase(itemId);
-      }
-    }
-
-    async function confirmStarsPurchase(itemId) {
-      const res = await fetch(`${API_URL}/buy-stars-item`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, itemId })
-      });
-      const data = await res.json();
-      if (data.success) {
-        alert('Покупка успешно совершена!');
-        syncData();
+        item.apply();
+        updateUI();
+        alert(`[Тест] Успешно куплено: ${item.name}!`);
       }
     }
 
@@ -499,15 +506,15 @@
       container.innerHTML = '';
       for (const key in cardsData) {
         const card = cardsData[key];
-        const lvl = state.cards[key] || 0;
-        const cost = Math.floor(card.baseCost * Math.pow(1.5, lvl));
+        const lvl = state.cards ? (state.cards[key] || 0) : 0;
+        const cost = Math.floor(card.baseCost * Math.pow(1.85, lvl));
 
         container.innerHTML += `
           <div class="card">
             <div>
               <strong>${card.name}</strong><br>
               <small>Ур. ${lvl} | +${card.profitPerHour} ֏/ч</small><br>
-              <span style="color:#ffd700">${cost} ֏</span>
+              <span style="color:#ffd700">${cost.toLocaleString()} ֏</span>
             </div>
             <button class="btn-action" onclick="buyCard('${card.id}')">Прокачать</button>
           </div>
@@ -533,11 +540,15 @@
     }
 
     setInterval(() => {
-      if (state.profitPerHour > 0) {
-        state.coins += (state.profitPerHour / 3600);
+      const effectiveProfit = state.profitPerHour * (state.isVip ? 1.5 : 1) * state.starsMultiplier;
+      if (effectiveProfit > 0) {
+        state.coins += (effectiveProfit / 3600);
+      }
+      if (state.hasAutoBot) {
+        state.coins += 1;
       }
       if (state.energy < state.maxEnergy) {
-        state.energy = Math.min(state.maxEnergy, state.energy + 3);
+        state.energy = Math.min(state.maxEnergy, state.energy + 1);
       }
       updateUI();
     }, 1000);
