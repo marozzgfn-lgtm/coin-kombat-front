@@ -149,7 +149,7 @@
     .nav-item.active { color: #ff9800; font-weight: bold; }
     .nav-icon { font-size: 16px; }
 
-    .card, .shop-card, .task-card, .admin-card, .lb-card {
+    .card, .task-card, .admin-card, .lb-card {
       background: rgba(255, 255, 255, 0.04);
       border: 1px solid rgba(255, 255, 255, 0.08);
       padding: 12px;
@@ -202,19 +202,6 @@
       padding: 8px 12px;
       border-radius: 8px;
       font-weight: bold;
-    }
-    .btn-stars {
-      background: linear-gradient(45deg, #0088cc, #00c6ff);
-      border: none;
-      color: #fff;
-      padding: 8px 14px;
-      border-radius: 8px;
-      font-weight: bold;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      white-space: nowrap;
     }
 
     .wheel-container {
@@ -301,11 +288,6 @@
       </div>
     </div>
 
-    <div id="tab-shop" class="tab-content">
-      <h3>⭐ Магазин Telegram Stars</h3>
-      <div id="starsShopList"></div>
-    </div>
-
     <div id="tab-cards" class="tab-content">
       <h3>Карточки Улучшений</h3>
       <div id="cardsList"></div>
@@ -365,9 +347,6 @@
     </button>
     <button class="nav-item" onclick="switchTab('lb', this)">
       <span class="nav-icon">🏆</span> Топ
-    </button>
-    <button class="nav-item" onclick="switchTab('shop', this)">
-      <span class="nav-icon">⭐</span> Магазин
     </button>
     <button class="nav-item" onclick="switchTab('ref', this)">
       <span class="nav-icon">👥</span> Друзья
@@ -438,12 +417,6 @@
       const adminBtn = document.getElementById('adminNavBtn');
       if (adminBtn) adminBtn.style.display = 'flex';
     }
-
-    const LOCAL_STARS_SHOP = [
-      { id: 'vip_pass', name: '⭐ VIP Статус (+50% к Доходу)', desc: 'Повышает всю прибыль на 50%', stars: 50, apply: () => { state.isVip = true; } },
-      { id: 'turbo_click', name: '⚡ Турбо Кликер (+3 к клику)', desc: 'Прибавляет +3 ֏ к каждому клику', stars: 25, apply: () => { state.clickPower += 3; } },
-      { id: 'energy_pack', name: '🔋 Запас Энергии +1500', desc: 'Увеличивает объем батареи', stars: 35, apply: () => { state.maxEnergy += 1500; state.energy += 1500; } }
-    ];
 
     const GAME_TASKS = [
       { id: 'reach_5k', title: 'Накопить 5,000 ֏', target: 5000, reward: 500 },
@@ -516,7 +489,6 @@
       renderDailyUI();
       renderLeaderboard();
       renderCards();
-      renderShop();
     }
 
     const tapBtn = document.getElementById('tapBtn');
@@ -671,29 +643,6 @@
         saveGame();
         updateUI();
         alert(`Награда получена: +${reward.toLocaleString()} ֏!`);
-      }
-    }
-
-    function renderShop() {
-      const container = document.getElementById('starsShopList');
-      container.innerHTML = '';
-      LOCAL_STARS_SHOP.forEach(item => {
-        container.innerHTML += `
-          <div class="shop-card">
-            <div><strong>${item.name}</strong><br><small style="color:#aaa">${item.desc}</small></div>
-            <button class="btn-stars" onclick="buyItem('${item.id}')">⭐ ${item.stars}</button>
-          </div>
-        `;
-      });
-    }
-
-    function buyItem(id) {
-      const item = LOCAL_STARS_SHOP.find(i => i.id === id);
-      if (item) {
-        item.apply();
-        saveGame();
-        updateUI();
-        alert(`Успешно приобретено: ${item.name}!`);
       }
     }
 
