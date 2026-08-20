@@ -3,29 +3,65 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>Coin Kombat</title>
+  <title>Coin Kombat Dram</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
     * { box-sizing: border-box; user-select: none; }
     body {
       font-family: 'Segoe UI', system-ui, sans-serif;
-      background: #0d0d15;
+      background: #0b0c10;
       color: #ffffff;
       margin: 0;
       padding: 0;
-      padding-bottom: 70px;
+      padding-bottom: 75px;
       min-height: 100vh;
     }
     .container { padding: 16px; text-align: center; }
 
-    .level-badge {
+    .level-container {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      padding: 10px;
+      margin-bottom: 12px;
+    }
+    .level-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      font-weight: bold;
+      margin-bottom: 6px;
+    }
+    .progress-bar-bg {
+      width: 100%;
+      height: 10px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #ff9800, #ffd700);
+      border-radius: 10px;
+      transition: width 0.3s ease;
+    }
+
+    .vip-status {
       display: inline-block;
-      background: linear-gradient(90deg, #ff9800, #ff5722);
+      background: #222;
+      border: 1px solid #444;
+      color: #888;
       padding: 4px 12px;
       border-radius: 20px;
-      font-size: 12px;
+      font-size: 11px;
       font-weight: bold;
-      margin-bottom: 8px;
+      margin-bottom: 10px;
+    }
+    .vip-status.active {
+      background: linear-gradient(90deg, #ffd700, #ff9800);
+      color: #000;
+      border: none;
+      box-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
     }
 
     .header-stats {
@@ -33,13 +69,13 @@
       justify-content: space-around;
       background: rgba(255, 255, 255, 0.05);
       border-radius: 12px;
-      padding: 10px;
+      padding: 12px;
       margin-bottom: 15px;
       font-size: 13px;
     }
 
     .coin-display {
-      font-size: 38px;
+      font-size: 40px;
       font-weight: 900;
       color: #ffd700;
       margin: 10px 0;
@@ -64,7 +100,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 70px;
+      font-size: 85px;
       transition: transform 0.05s ease;
     }
     .click-btn:active { transform: scale(0.93); }
@@ -75,7 +111,7 @@
       font-weight: bold;
       color: #ffd700;
       pointer-events: none;
-      animation: floatUp 0.8s ease-out forwards;
+      animation: floatUp 0.7s ease-out forwards;
     }
     @keyframes floatUp {
       0% { opacity: 1; transform: translateY(0); }
@@ -90,15 +126,15 @@
       bottom: 0;
       left: 0;
       right: 0;
-      height: 60px;
-      background: #151522;
+      height: 65px;
+      background: #12131e;
       border-top: 1px solid rgba(255, 255, 255, 0.1);
       display: flex;
       justify-content: space-around;
       align-items: center;
     }
     .nav-item {
-      color: #888;
+      color: #777;
       font-size: 11px;
       border: none;
       background: none;
@@ -109,92 +145,104 @@
       gap: 4px;
     }
     .nav-item.active { color: #ff9800; font-weight: bold; }
-    .nav-icon { font-size: 18px; }
+    .nav-icon { font-size: 20px; }
 
-    .card, .task-card, .stars-card {
-      background: rgba(255, 255, 255, 0.05);
+    .card, .shop-card, .task-card {
+      background: rgba(255, 255, 255, 0.04);
       border: 1px solid rgba(255, 255, 255, 0.08);
       padding: 12px;
-      border-radius: 10px;
+      border-radius: 12px;
       margin-bottom: 10px;
       display: flex;
       justify-content: space-between;
       align-items: center;
       text-align: left;
     }
-    
-    .stars-card {
-      border: 1px solid #ffd700;
-      background: rgba(255, 215, 0, 0.05);
-    }
 
     .btn-action {
       background: #ff9800;
       border: none;
-      color: white;
+      color: #fff;
       padding: 8px 12px;
-      border-radius: 6px;
+      border-radius: 8px;
       font-weight: bold;
       cursor: pointer;
     }
-    .btn-stars {
-      background: linear-gradient(45deg, #ffd700, #ffa000);
-      color: #000;
+    .btn-action:disabled {
+      background: #444;
+      color: #888;
+      cursor: not-allowed;
     }
-    .btn-action:disabled { background: #444; color: #888; }
+    .btn-claimed {
+      background: #2e7d32;
+      color: #fff;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-weight: bold;
+    }
+    .btn-stars {
+      background: linear-gradient(45deg, #0088cc, #00c6ff);
+      border: none;
+      color: #fff;
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
   </style>
 </head>
 <body>
 
   <div class="container">
-    <div class="level-badge" id="userLevel">Уровень 1: Новичок</div>
+    
+    <div class="level-container">
+      <div class="level-header">
+        <span id="lvlName">LVL 1: Новичок</span>
+        <span id="lvlRatio">0 ֏ / 5000 ֏</span>
+      </div>
+      <div class="progress-bar-bg">
+        <div class="progress-bar-fill" id="lvlProgress"></div>
+      </div>
+    </div>
+
+    <div class="vip-status" id="vipBadge">⭐ VIP НЕ АКТИВЕН</div>
 
     <div class="header-stats">
-      <div>⚡ Доход: <strong id="profit" style="color:#4caf50">0</strong>/ч</div>
+      <div>⚡ Доход: <strong id="profit" style="color:#4caf50">0</strong> ֏/ч</div>
       <div>🔋 Энергия: <strong id="energy">1000</strong>/1000</div>
     </div>
 
-    <div class="coin-display">🪙 <span id="coins">0</span></div>
+    <div class="coin-display"><span id="coins">0</span> ֏</div>
 
-    <!-- Кликер -->
     <div id="tab-clicker" class="tab-content active">
       <div class="click-area" id="clickArea">
-        <button class="click-btn" id="tapBtn">🥷</button>
+        <button class="click-btn" id="tapBtn">🪙</button>
       </div>
     </div>
 
-    <!-- Рынок и Магазин Stars -->
-    <div id="tab-cards" class="tab-content">
-      <h3 style="color:#ffd700">⭐ Магазин Telegram Stars</h3>
-      <div class="stars-card">
-        <div>
-          <strong>100,000 Монет</strong><br>
-          <small>Быстрый буст баланса</small>
-        </div>
-        <button class="btn-action btn-stars" onclick="payWithStars('coins_pack', 50)">⭐ 50 Stars</button>
-      </div>
-      <div class="stars-card">
-        <div>
-          <strong>VIP Статус + 2X Тап</strong><br>
-          <small>+10,000/ч и двойной клик</small>
-        </div>
-        <button class="btn-action btn-stars" onclick="payWithStars('premium', 150)">⭐ 150 Stars</button>
-      </div>
-
-      <h3 style="margin-top: 20px;">Карточки улучшений</h3>
-      <div id="cardsList"></div>
-    </div>
-
-    <!-- Задания -->
     <div id="tab-tasks" class="tab-content">
-      <h3>Задания</h3>
+      <h3>🎯 Игровые Задания</h3>
+      <p style="font-size: 12px; color: #aaa; margin-bottom: 15px;">Накапливайте баланс и получайте бонусные награды!</p>
       <div id="tasksList"></div>
     </div>
 
-    <!-- Рефералы -->
+    <div id="tab-shop" class="tab-content">
+      <h3>⭐ Магазин Telegram Stars</h3>
+      <div id="starsShopList"></div>
+    </div>
+
+    <div id="tab-cards" class="tab-content">
+      <h3>Карточки Улучшений</h3>
+      <div id="cardsList"></div>
+    </div>
+
     <div id="tab-ref" class="tab-content">
-      <h3>Пригласи друзей</h3>
-      <p style="font-size: 13px; color: #aaa;">Получайте +2,500 монет за каждого друга!</p>
+      <h3>Пригласи Друзей</h3>
+      <p style="font-size: 13px; color: #aaa;">Получайте +5,000 ֏ за каждого друга!</p>
       <div style="margin: 20px 0;">Приглашено: <strong id="refCount">0</strong></div>
       <button class="btn-action" style="width: 100%; padding: 12px;" onclick="copyRefLink()">Скопировать ссылку</button>
     </div>
@@ -202,13 +250,16 @@
 
   <div class="navbar">
     <button class="nav-item active" onclick="switchTab('clicker', this)">
-      <span class="nav-icon">⚡</span> Кликер
-    </button>
-    <button class="nav-item" onclick="switchTab('cards', this)">
-      <span class="nav-icon">⭐</span> Магазин
+      <span class="nav-icon">⚡</span> Игра
     </button>
     <button class="nav-item" onclick="switchTab('tasks', this)">
-      <span class="nav-icon">📋</span> Задания
+      <span class="nav-icon">🎯</span> Задания
+    </button>
+    <button class="nav-item" onclick="switchTab('shop', this)">
+      <span class="nav-icon">⭐</span> Магазин
+    </button>
+    <button class="nav-item" onclick="switchTab('cards', this)">
+      <span class="nav-icon">📈</span> Майнинг
     </button>
     <button class="nav-item" onclick="switchTab('ref', this)">
       <span class="nav-icon">👥</span> Друзья
@@ -218,14 +269,45 @@
   <script>
     const tg = window.Telegram.WebApp;
     tg.ready();
+    tg.expand();
 
     const API_URL = 'https://coin-kombat-back.onrender.com/api/user';
     const userId = tg.initDataUnsafe.user?.id || 123456;
     const startParam = tg.initDataUnsafe.start_param || null;
 
-    let state = { coins: 0, energy: 1000, profitPerHour: 0, completedTasks: [], referralsCount: 0, isPremium: false };
+    let state = { coins: 0, energy: 1000, maxEnergy: 1000, profitPerHour: 0, isVip: false, referralsCount: 0 };
     let cardsData = {};
-    let tasksData = [];
+    let starsShopData = {};
+
+    let completedTasks = JSON.parse(localStorage.getItem(`completed_tasks_${userId}`) || '[]');
+
+    const GAME_TASKS = [
+      { id: 'reach_1k', title: 'Накопить 1,000 ֏', target: 1000, reward: 250 },
+      { id: 'reach_2k', title: 'Накопить 2,000 ֏', target: 2000, reward: 500 },
+      { id: 'reach_5k', title: 'Накопить 5,000 ֏', target: 5000, reward: 1500 },
+      { id: 'reach_10k', title: 'Накопить 10,000 ֏', target: 10000, reward: 3000 },
+      { id: 'reach_25k', title: 'Накопить 25,000 ֏', target: 25000, reward: 6000 },
+      { id: 'reach_50k', title: 'Накопить 50,000 ֏', target: 50000, reward: 10000 },
+      { id: 'reach_75k', title: 'Накопить 75,000 ֏', target: 75000, reward: 15000 },
+      { id: 'reach_100k', title: 'Накопить 100,000 ֏', target: 100000, reward: 25000 },
+      { id: 'reach_250k', title: 'Накопить 250,000 ֏', target: 250000, reward: 50000 },
+      { id: 'reach_500k', title: 'Накопить 500,000 ֏', target: 500000, reward: 100000 },
+      { id: 'reach_750k', title: 'Накопить 750,000 ֏', target: 750000, reward: 150000 },
+      { id: 'reach_1m', title: 'Накопить 1,000,000 ֏', target: 1000000, reward: 250000 },
+      { id: 'reach_2m', title: 'Накопить 2,000,000 ֏', target: 2000000, reward: 500000 },
+      { id: 'reach_5m', title: 'Накопить 5,000,000 ֏', target: 5000000, reward: 1250000 },
+      { id: 'reach_10m', title: 'Накопить 10,000,000 ֏', target: 10000000, reward: 3000000 },
+      { id: 'reach_20m', title: 'Накопить 20,000,000 ֏', target: 20000000, reward: 7000000 }
+    ];
+
+    const LEVEL_THRESHOLDS = [
+      { lvl: 1, name: 'LVL 1: Новичок', max: 5000, icon: '🪙' },
+      { lvl: 2, name: 'LVL 2: Боец', max: 20000, icon: '💵' },
+      { lvl: 3, name: 'LVL 3: Мастер', max: 100000, icon: '💶' },
+      { lvl: 4, name: 'LVL 4: Грандмастер', max: 500000, icon: '💷' },
+      { lvl: 5, name: 'LVL 5: Легенда', max: 2000000, icon: '💳' },
+      { lvl: 6, name: 'LVL 6: Лорд Kombat', max: Infinity, icon: '👑' }
+    ];
 
     async function syncData() {
       try {
@@ -237,22 +319,59 @@
         const data = await res.json();
         state = data.user;
         cardsData = data.cardsConfig;
-        tasksData = data.tasksConfig;
+        starsShopData = data.starsShop;
         
         updateUI();
         renderCards();
+        renderShop();
         renderTasks();
       } catch (err) { console.error(err); }
     }
 
     function updateUI() {
-      document.getElementById('coins').innerText = Math.floor(state.coins);
+      const currentCoins = Math.floor(state.coins);
+      document.getElementById('coins').innerText = currentCoins;
       document.getElementById('energy').innerText = state.energy;
       document.getElementById('profit').innerText = state.profitPerHour;
       document.getElementById('refCount').innerText = state.referralsCount || 0;
 
-      const level = Math.floor(state.coins / 5000) + 1;
-      document.getElementById('userLevel').innerText = state.isPremium ? `⭐ VIP Combat-Мастер` : `Уровень ${level}: Kombat-Боец`;
+      let currentLvl = LEVEL_THRESHOLDS[0];
+      let prevThreshold = 0;
+
+      for (let i = 0; i < LEVEL_THRESHOLDS.length; i++) {
+        if (currentCoins >= LEVEL_THRESHOLDS[i].max) {
+          prevThreshold = LEVEL_THRESHOLDS[i].max;
+        } else {
+          currentLvl = LEVEL_THRESHOLDS[i];
+          break;
+        }
+      }
+
+      document.getElementById('lvlName').innerText = currentLvl.name;
+      document.getElementById('tapBtn').innerText = currentLvl.icon;
+
+      if (currentLvl.max === Infinity) {
+        document.getElementById('lvlRatio').innerText = `${currentCoins} ֏ (MAX)`;
+        document.getElementById('lvlProgress').style.width = '100%';
+      } else {
+        const progressCoins = currentCoins - prevThreshold;
+        const totalCoinsNeeded = currentLvl.max - prevThreshold;
+        const percent = Math.min(100, Math.max(0, (progressCoins / totalCoinsNeeded) * 100));
+
+        document.getElementById('lvlRatio').innerText = `${currentCoins} ֏ / ${currentLvl.max} ֏`;
+        document.getElementById('lvlProgress').style.width = `${percent}%`;
+      }
+
+      const badge = document.getElementById('vipBadge');
+      if (state.isVip) {
+        badge.innerText = '⭐ VIP АКТИВЕН (x2 КЛИК)';
+        badge.classList.add('active');
+      } else {
+        badge.innerText = '⭐ VIP НЕ АКТИВЕН';
+        badge.classList.remove('active');
+      }
+
+      renderTasks();
     }
 
     const tapBtn = document.getElementById('tapBtn');
@@ -260,18 +379,20 @@
 
     tapBtn.addEventListener('click', async (e) => {
       if (state.energy > 0) {
-        const addCoins = state.isPremium ? 2 : 1;
-        state.coins += addCoins;
+        const earned = state.isVip ? 2 : 1;
+        state.coins += earned;
         state.energy -= 1;
         updateUI();
 
         const floatText = document.createElement('div');
         floatText.className = 'floating-text';
-        floatText.innerText = `+${addCoins}`;
-        floatText.style.left = `${e.clientX - clickArea.getBoundingClientRect().left - 10}px`;
-        floatText.style.top = `${e.clientY - clickArea.getBoundingClientRect().top - 20}px`;
+        floatText.innerText = `+${earned} ֏`;
+        
+        const rect = clickArea.getBoundingClientRect();
+        floatText.style.left = `${e.clientX - rect.left - 10}px`;
+        floatText.style.top = `${e.clientY - rect.top - 20}px`;
         clickArea.appendChild(floatText);
-        setTimeout(() => floatText.remove(), 800);
+        setTimeout(() => floatText.remove(), 700);
 
         await fetch(`${API_URL}/tap`, {
           method: 'POST',
@@ -280,6 +401,90 @@
         });
       }
     });
+
+    function renderTasks() {
+      const container = document.getElementById('tasksList');
+      if (!container) return;
+      container.innerHTML = '';
+
+      GAME_TASKS.forEach(task => {
+        const isCompleted = completedTasks.includes(task.id);
+        const canClaim = state.coins >= task.target && !isCompleted;
+
+        let btnHTML = '';
+        if (isCompleted) {
+          btnHTML = `<button class="btn-claimed">✓ Получено</button>`;
+        } else if (canClaim) {
+          btnHTML = `<button class="btn-action" onclick="claimTask('${task.id}', ${task.reward})">Забрать</button>`;
+        } else {
+          btnHTML = `<button class="btn-action" disabled>${Math.floor(state.coins)}/${task.target}</button>`;
+        }
+
+        container.innerHTML += `
+          <div class="task-card">
+            <div>
+              <strong>${task.title}</strong><br>
+              <small style="color:#ffd700">Награда: +${task.reward} ֏</small>
+            </div>
+            ${btnHTML}
+          </div>
+        `;
+      });
+    }
+
+    function claimTask(taskId, reward) {
+      if (completedTasks.includes(taskId)) return;
+
+      completedTasks.push(taskId);
+      localStorage.setItem(`completed_tasks_${userId}`, JSON.stringify(completedTasks));
+
+      state.coins += reward;
+      updateUI();
+      alert(`Вы успешно получили +${reward} ֏!`);
+    }
+
+    function renderShop() {
+      const container = document.getElementById('starsShopList');
+      container.innerHTML = '';
+      for (const key in starsShopData) {
+        const item = starsShopData[key];
+        container.innerHTML += `
+          <div class="shop-card">
+            <div>
+              <strong>${item.name}</strong>
+            </div>
+            <button class="btn-stars" onclick="buyWithStars('${item.id}')">
+              ⭐ ${item.stars}
+            </button>
+          </div>
+        `;
+      }
+    }
+
+    async function buyWithStars(itemId) {
+      if (tg.openInvoice) {
+        tg.openInvoice('https://t.me/invoice/example', async (status) => {
+          if (status === 'paid') {
+            await confirmStarsPurchase(itemId);
+          }
+        });
+      } else {
+        await confirmStarsPurchase(itemId);
+      }
+    }
+
+    async function confirmStarsPurchase(itemId) {
+      const res = await fetch(`${API_URL}/buy-stars-item`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, itemId })
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert('Покупка успешно совершена!');
+        syncData();
+      }
+    }
 
     function switchTab(tabId, el) {
       document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
@@ -301,8 +506,8 @@
           <div class="card">
             <div>
               <strong>${card.name}</strong><br>
-              <small>Ур. ${lvl} | +${card.profitPerHour}/ч</small><br>
-              <span style="color:#ffd700">🪙 ${cost}</span>
+              <small>Ур. ${lvl} | +${card.profitPerHour} ֏/ч</small><br>
+              <span style="color:#ffd700">${cost} ֏</span>
             </div>
             <button class="btn-action" onclick="buyCard('${card.id}')">Прокачать</button>
           </div>
@@ -321,75 +526,20 @@
       else alert(data.error);
     }
 
-    // Оплата через Telegram Stars
-    async function payWithStars(itemType, starsAmount) {
-      if (tg.openInvoice) {
-        // Симуляция успешной оплаты через WebApp (при подтверждении платежа в Telegram)
-        tg.openInvoice(`https://t.me/invoice/example`, async (status) => {
-          if (status === 'paid' || status === 'paid_test') {
-            await applyStarsPurchase(itemType);
-          }
-        });
-      }
-      
-      // Локальное начисление для проверки
-      await applyStarsPurchase(itemType);
-    }
-
-    async function applyStarsPurchase(itemType) {
-      const res = await fetch(`${API_URL}/buy-stars-item`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, itemType })
-      });
-      const data = await res.json();
-      if (data.success) {
-        alert(data.message);
-        syncData();
-      }
-    }
-
-    function renderTasks() {
-      const container = document.getElementById('tasksList');
-      container.innerHTML = '';
-      tasksData.forEach(task => {
-        const isDone = state.completedTasks.includes(task.id);
-        container.innerHTML += `
-          <div class="task-card">
-            <div>
-              <strong>${task.title}</strong><br>
-              <span style="color:#ffd700">+🪙 ${task.reward}</span>
-            </div>
-            <button class="btn-action" ${isDone ? 'disabled' : ''} onclick="completeTask('${task.id}')">
-              ${isDone ? 'Выполнено' : 'Награды'}
-            </button>
-          </div>
-        `;
-      });
-    }
-
-    async function completeTask(taskId) {
-      const res = await fetch(`${API_URL}/complete-task`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, taskId })
-      });
-      const data = await res.json();
-      if (data.success) syncData();
-      else alert(data.error);
-    }
-
     function copyRefLink() {
       const link = `https://t.me/CoinKombat_Bot?start=${userId}`;
       navigator.clipboard.writeText(link);
-      alert('Реферальная ссылка скопирована!');
+      alert('Ссылка скопирована!');
     }
 
     setInterval(() => {
-      if (state.energy < 1000) {
-        state.energy = Math.min(1000, state.energy + 3);
-        updateUI();
+      if (state.profitPerHour > 0) {
+        state.coins += (state.profitPerHour / 3600);
       }
+      if (state.energy < state.maxEnergy) {
+        state.energy = Math.min(state.maxEnergy, state.energy + 3);
+      }
+      updateUI();
     }, 1000);
 
     syncData();
