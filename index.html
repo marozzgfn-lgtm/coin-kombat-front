@@ -2,30 +2,218 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>Coin Kombat</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
-    body { font-family: sans-serif; background: #121212; color: white; text-align: center; margin: 0; padding: 20px; }
-    h1 { color: #ff9800; margin-bottom: 5px; }
-    .coin-display { font-size: 32px; font-weight: bold; margin: 20px 0; color: #ffd700; }
-    .click-btn { width: 180px; height: 180px; border-radius: 50%; background: radial-gradient(circle, #ff9800, #e65100); border: none; font-size: 24px; color: white; cursor: pointer; box-shadow: 0 0 15px rgba(255,152,0,0.5); }
-    .click-btn:active { transform: scale(0.95); }
-    .stats { margin: 15px 0; font-size: 14px; color: #aaa; }
-    .cards-container { margin-top: 30px; display: flex; flex-direction: column; gap: 10px; }
-    .card { background: #1e1e1e; padding: 15px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; }
-    .card button { background: #4caf50; border: none; color: white; padding: 8px 12px; border-radius: 4px; }
+    * { box-sizing: border-box; user-select: none; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #0d0d15;
+      color: #ffffff;
+      margin: 0;
+      padding: 0;
+      padding-bottom: 70px;
+      min-height: 100vh;
+    }
+    .container { padding: 16px; text-align: center; }
+
+    .level-badge {
+      display: inline-block;
+      background: linear-gradient(90deg, #ff9800, #ff5722);
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+
+    .header-stats {
+      display: flex;
+      justify-content: space-around;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      padding: 10px;
+      margin-bottom: 15px;
+      font-size: 13px;
+    }
+
+    .coin-display {
+      font-size: 38px;
+      font-weight: 900;
+      color: #ffd700;
+      margin: 10px 0;
+      text-shadow: 0 0 15px rgba(255, 215, 0, 0.3);
+    }
+
+    .click-area {
+      position: relative;
+      margin: 20px auto;
+      width: 220px;
+      height: 220px;
+    }
+    .click-btn {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      background: radial-gradient(circle, #2a1b4e 0%, #140d28 100%);
+      border: 6px solid #ff9800;
+      box-shadow: 0 0 35px rgba(255, 152, 0, 0.3);
+      cursor: pointer;
+      outline: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 70px;
+      transition: transform 0.05s ease;
+    }
+    .click-btn:active { transform: scale(0.93); }
+
+    .floating-text {
+      position: absolute;
+      font-size: 26px;
+      font-weight: bold;
+      color: #ffd700;
+      pointer-events: none;
+      animation: floatUp 0.8s ease-out forwards;
+    }
+    @keyframes floatUp {
+      0% { opacity: 1; transform: translateY(0); }
+      100% { opacity: 0; transform: translateY(-60px); }
+    }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    .navbar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 60px;
+      background: #151522;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+    }
+    .nav-item {
+      color: #888;
+      font-size: 11px;
+      border: none;
+      background: none;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+    .nav-item.active { color: #ff9800; font-weight: bold; }
+    .nav-icon { font-size: 18px; }
+
+    .card, .task-card, .stars-card {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 12px;
+      border-radius: 10px;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      text-align: left;
+    }
+    
+    .stars-card {
+      border: 1px solid #ffd700;
+      background: rgba(255, 215, 0, 0.05);
+    }
+
+    .btn-action {
+      background: #ff9800;
+      border: none;
+      color: white;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .btn-stars {
+      background: linear-gradient(45deg, #ffd700, #ffa000);
+      color: #000;
+    }
+    .btn-action:disabled { background: #444; color: #888; }
   </style>
 </head>
 <body>
 
-  <h1>Coin Kombat</h1>
-  <div class="stats">Прибыль в час: <span id="profit">0</span>/час</div>
-  <div class="coin-display" id="coins">0</div>
-  <button class="click-btn" id="tapBtn">KOMBAT!</button>
-  <div class="stats">Энергия: <span id="energy">1000</span>/1000</div>
+  <div class="container">
+    <div class="level-badge" id="userLevel">Уровень 1: Новичок</div>
 
-  <div class="cards-container" id="cards"></div>
+    <div class="header-stats">
+      <div>⚡ Доход: <strong id="profit" style="color:#4caf50">0</strong>/ч</div>
+      <div>🔋 Энергия: <strong id="energy">1000</strong>/1000</div>
+    </div>
+
+    <div class="coin-display">🪙 <span id="coins">0</span></div>
+
+    <!-- Кликер -->
+    <div id="tab-clicker" class="tab-content active">
+      <div class="click-area" id="clickArea">
+        <button class="click-btn" id="tapBtn">🥷</button>
+      </div>
+    </div>
+
+    <!-- Рынок и Магазин Stars -->
+    <div id="tab-cards" class="tab-content">
+      <h3 style="color:#ffd700">⭐ Магазин Telegram Stars</h3>
+      <div class="stars-card">
+        <div>
+          <strong>100,000 Монет</strong><br>
+          <small>Быстрый буст баланса</small>
+        </div>
+        <button class="btn-action btn-stars" onclick="payWithStars('coins_pack', 50)">⭐ 50 Stars</button>
+      </div>
+      <div class="stars-card">
+        <div>
+          <strong>VIP Статус + 2X Тап</strong><br>
+          <small>+10,000/ч и двойной клик</small>
+        </div>
+        <button class="btn-action btn-stars" onclick="payWithStars('premium', 150)">⭐ 150 Stars</button>
+      </div>
+
+      <h3 style="margin-top: 20px;">Карточки улучшений</h3>
+      <div id="cardsList"></div>
+    </div>
+
+    <!-- Задания -->
+    <div id="tab-tasks" class="tab-content">
+      <h3>Задания</h3>
+      <div id="tasksList"></div>
+    </div>
+
+    <!-- Рефералы -->
+    <div id="tab-ref" class="tab-content">
+      <h3>Пригласи друзей</h3>
+      <p style="font-size: 13px; color: #aaa;">Получайте +2,500 монет за каждого друга!</p>
+      <div style="margin: 20px 0;">Приглашено: <strong id="refCount">0</strong></div>
+      <button class="btn-action" style="width: 100%; padding: 12px;" onclick="copyRefLink()">Скопировать ссылку</button>
+    </div>
+  </div>
+
+  <div class="navbar">
+    <button class="nav-item active" onclick="switchTab('clicker', this)">
+      <span class="nav-icon">⚡</span> Кликер
+    </button>
+    <button class="nav-item" onclick="switchTab('cards', this)">
+      <span class="nav-icon">⭐</span> Магазин
+    </button>
+    <button class="nav-item" onclick="switchTab('tasks', this)">
+      <span class="nav-icon">📋</span> Задания
+    </button>
+    <button class="nav-item" onclick="switchTab('ref', this)">
+      <span class="nav-icon">👥</span> Друзья
+    </button>
+  </div>
 
   <script>
     const tg = window.Telegram.WebApp;
@@ -33,36 +221,58 @@
 
     const API_URL = 'https://coin-kombat-back.onrender.com/api/user';
     const userId = tg.initDataUnsafe.user?.id || 123456;
+    const startParam = tg.initDataUnsafe.start_param || null;
 
-    let state = { coins: 0, energy: 1000, profitPerHour: 0 };
+    let state = { coins: 0, energy: 1000, profitPerHour: 0, completedTasks: [], referralsCount: 0, isPremium: false };
+    let cardsData = {};
+    let tasksData = [];
 
     async function syncData() {
       try {
         const res = await fetch(`${API_URL}/sync`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId })
+          body: JSON.stringify({ userId, referrerId: startParam })
         });
         const data = await res.json();
         state = data.user;
+        cardsData = data.cardsConfig;
+        tasksData = data.tasksConfig;
+        
         updateUI();
-        renderCards(data.cardsConfig);
-      } catch (err) {
-        console.error('Ошибка синхронизации:', err);
-      }
+        renderCards();
+        renderTasks();
+      } catch (err) { console.error(err); }
     }
 
     function updateUI() {
       document.getElementById('coins').innerText = Math.floor(state.coins);
       document.getElementById('energy').innerText = state.energy;
       document.getElementById('profit').innerText = state.profitPerHour;
+      document.getElementById('refCount').innerText = state.referralsCount || 0;
+
+      const level = Math.floor(state.coins / 5000) + 1;
+      document.getElementById('userLevel').innerText = state.isPremium ? `⭐ VIP Combat-Мастер` : `Уровень ${level}: Kombat-Боец`;
     }
 
-    document.getElementById('tapBtn').addEventListener('click', async () => {
+    const tapBtn = document.getElementById('tapBtn');
+    const clickArea = document.getElementById('clickArea');
+
+    tapBtn.addEventListener('click', async (e) => {
       if (state.energy > 0) {
-        state.coins += 1;
+        const addCoins = state.isPremium ? 2 : 1;
+        state.coins += addCoins;
         state.energy -= 1;
         updateUI();
+
+        const floatText = document.createElement('div');
+        floatText.className = 'floating-text';
+        floatText.innerText = `+${addCoins}`;
+        floatText.style.left = `${e.clientX - clickArea.getBoundingClientRect().left - 10}px`;
+        floatText.style.top = `${e.clientY - clickArea.getBoundingClientRect().top - 20}px`;
+        clickArea.appendChild(floatText);
+        setTimeout(() => floatText.remove(), 800);
+
         await fetch(`${API_URL}/tap`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -71,24 +281,32 @@
       }
     });
 
-    function renderCards(cardsConfig) {
-      const container = document.getElementById('cards');
+    function switchTab(tabId, el) {
+      document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+      
+      document.getElementById(`tab-${tabId}`).classList.add('active');
+      el.classList.add('active');
+    }
+
+    function renderCards() {
+      const container = document.getElementById('cardsList');
       container.innerHTML = '';
-      for (const key in cardsConfig) {
-        const card = cardsConfig[key];
+      for (const key in cardsData) {
+        const card = cardsData[key];
         const lvl = state.cards[key] || 0;
         const cost = Math.floor(card.baseCost * Math.pow(1.5, lvl));
 
-        const div = document.createElement('div');
-        div.className = 'card';
-        div.innerHTML = `
-          <div>
-            <strong>${card.name}</strong> (Уровень ${lvl})<br>
-            +${card.profitPerHour}/ч | Цена: ${cost}
+        container.innerHTML += `
+          <div class="card">
+            <div>
+              <strong>${card.name}</strong><br>
+              <small>Ур. ${lvl} | +${card.profitPerHour}/ч</small><br>
+              <span style="color:#ffd700">🪙 ${cost}</span>
+            </div>
+            <button class="btn-action" onclick="buyCard('${card.id}')">Прокачать</button>
           </div>
-          <button onclick="buyCard('${card.id}')">Прокачать</button>
         `;
-        container.appendChild(div);
       }
     }
 
@@ -99,12 +317,80 @@
         body: JSON.stringify({ userId, cardId })
       });
       const data = await res.json();
+      if (data.success) syncData();
+      else alert(data.error);
+    }
+
+    // Оплата через Telegram Stars
+    async function payWithStars(itemType, starsAmount) {
+      if (tg.openInvoice) {
+        // Симуляция успешной оплаты через WebApp (при подтверждении платежа в Telegram)
+        tg.openInvoice(`https://t.me/invoice/example`, async (status) => {
+          if (status === 'paid' || status === 'paid_test') {
+            await applyStarsPurchase(itemType);
+          }
+        });
+      }
+      
+      // Локальное начисление для проверки
+      await applyStarsPurchase(itemType);
+    }
+
+    async function applyStarsPurchase(itemType) {
+      const res = await fetch(`${API_URL}/buy-stars-item`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, itemType })
+      });
+      const data = await res.json();
       if (data.success) {
+        alert(data.message);
         syncData();
-      } else {
-        alert(data.error);
       }
     }
+
+    function renderTasks() {
+      const container = document.getElementById('tasksList');
+      container.innerHTML = '';
+      tasksData.forEach(task => {
+        const isDone = state.completedTasks.includes(task.id);
+        container.innerHTML += `
+          <div class="task-card">
+            <div>
+              <strong>${task.title}</strong><br>
+              <span style="color:#ffd700">+🪙 ${task.reward}</span>
+            </div>
+            <button class="btn-action" ${isDone ? 'disabled' : ''} onclick="completeTask('${task.id}')">
+              ${isDone ? 'Выполнено' : 'Награды'}
+            </button>
+          </div>
+        `;
+      });
+    }
+
+    async function completeTask(taskId) {
+      const res = await fetch(`${API_URL}/complete-task`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, taskId })
+      });
+      const data = await res.json();
+      if (data.success) syncData();
+      else alert(data.error);
+    }
+
+    function copyRefLink() {
+      const link = `https://t.me/CoinKombat_Bot?start=${userId}`;
+      navigator.clipboard.writeText(link);
+      alert('Реферальная ссылка скопирована!');
+    }
+
+    setInterval(() => {
+      if (state.energy < 1000) {
+        state.energy = Math.min(1000, state.energy + 3);
+        updateUI();
+      }
+    }, 1000);
 
     syncData();
   </script>
