@@ -31,22 +31,25 @@
     const tg = window.Telegram.WebApp;
     tg.ready();
 
-    // Ссылку на Render подставите сюда после шага 2
-    const API_URL = 'https://YOUR-RENDER-APP.onrender.com/api/user';
+    const API_URL = 'https://coin-kombat-back.onrender.com/api/user';
     const userId = tg.initDataUnsafe.user?.id || 123456;
 
     let state = { coins: 0, energy: 1000, profitPerHour: 0 };
 
     async function syncData() {
-      const res = await fetch(`${API_URL}/sync`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId })
-      });
-      const data = await res.json();
-      state = data.user;
-      updateUI();
-      renderCards(data.cardsConfig);
+      try {
+        const res = await fetch(`${API_URL}/sync`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId })
+        });
+        const data = await res.json();
+        state = data.user;
+        updateUI();
+        renderCards(data.cardsConfig);
+      } catch (err) {
+        console.error('Ошибка синхронизации:', err);
+      }
     }
 
     function updateUI() {
