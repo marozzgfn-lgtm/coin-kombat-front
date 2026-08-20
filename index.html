@@ -17,6 +17,7 @@
       min-height: 100vh;
     }
     .container { padding: 16px; text-align: center; }
+
     .level-container {
       background: rgba(255, 255, 255, 0.05);
       border-radius: 12px;
@@ -34,6 +35,561 @@
       width: 100%;
       height: 10px;
       background: rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #ff9800, #ffd700);
+      border-radius: 10px;
+      transition: width 0.3s ease;
+    }
+
+    .vip-status {
+      display: inline-block;
+      background: #222;
+      border: 1px solid #444;
+      color: #888;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+    .vip-status.active {
+      background: linear-gradient(90deg, #ffd700, #ff9800);
+      color: #000;
+      border: none;
+      box-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
+    }
+
+    .header-stats {
+      display: flex;
+      justify-content: space-around;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 15px;
+      font-size: 13px;
+    }
+
+    .coin-display {
+      font-size: 36px;
+      font-weight: 900;
+      color: #ffd700;
+      margin: 10px 0;
+      text-shadow: 0 0 15px rgba(255, 215, 0, 0.3);
+    }
+
+    .click-area {
+      position: relative;
+      margin: 20px auto;
+      width: 220px;
+      height: 220px;
+    }
+    .click-btn {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      background: radial-gradient(circle, #2a1b4e 0%, #140d28 100%);
+      border: 6px solid #ff9800;
+      box-shadow: 0 0 35px rgba(255, 152, 0, 0.3);
+      cursor: pointer;
+      outline: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 85px;
+      transition: transform 0.05s ease;
+    }
+    .click-btn:active { transform: scale(0.93); }
+
+    .floating-text {
+      position: absolute;
+      font-size: 26px;
+      font-weight: bold;
+      color: #ffd700;
+      pointer-events: none;
+      animation: floatUp 0.7s ease-out forwards;
+    }
+    @keyframes floatUp {
+      0% { opacity: 1; transform: translateY(0); }
+      100% { opacity: 0; transform: translateY(-60px); }
+    }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    .navbar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 65px;
+      background: #12131e;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      z-index: 100;
+    }
+    .nav-item {
+      color: #777;
+      font-size: 11px;
+      border: none;
+      background: none;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+    .nav-item.active { color: #ff9800; font-weight: bold; }
+    .nav-icon { font-size: 20px; }
+
+    .card, .shop-card, .task-card {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 12px;
+      border-radius: 12px;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      text-align: left;
+    }
+
+    .admin-form {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      text-align: left;
+      background: rgba(255, 255, 255, 0.04);
+      padding: 15px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 152, 0, 0.3);
+    }
+    .admin-input {
+      background: #1a1b26;
+      border: 1px solid #333;
+      color: #fff;
+      padding: 10px;
+      border-radius: 8px;
+      outline: none;
+    }
+
+    .btn-action {
+      background: #ff9800;
+      border: none;
+      color: #fff;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .btn-action:disabled {
+      background: #444;
+      color: #888;
+      cursor: not-allowed;
+    }
+    .btn-claimed {
+      background: #2e7d32;
+      color: #fff;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-weight: bold;
+    }
+    .btn-stars {
+      background: linear-gradient(45deg, #0088cc, #00c6ff);
+      border: none;
+      color: #fff;
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      white-space: nowrap;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <div class="level-container">
+      <div class="level-header">
+        <span id="lvlName">LVL 1: Новичок</span>
+        <span id="lvlRatio">0 ֏ / 10,000 ֏</span>
+      </div>
+      <div class="progress-bar-bg">
+        <div class="progress-bar-fill" id="lvlProgress"></div>
+      </div>
+    </div>
+
+    <div class="vip-status" id="vipBadge">⭐ VIP НЕ АКТИВЕН</div>
+
+    <div class="header-stats">
+      <div>⚡ Доход: <strong id="profit" style="color:#4caf50">0</strong> ֏/ч</div>
+      <div>🔋 Энергия: <strong id="energy">500/500</strong></div>
+    </div>
+
+    <div class="coin-display"><span id="coins">0</span> ֏</div>
+
+    <!-- 1. ИГРА -->
+    <div id="tab-clicker" class="tab-content active">
+      <div class="click-area" id="clickArea">
+        <button class="click-btn" id="tapBtn">🪙</button>
+      </div>
+    </div>
+
+    <!-- 2. ЗАДАНИЯ -->
+    <div id="tab-tasks" class="tab-content">
+      <h3>🎯 Игровые Задания</h3>
+      <p style="font-size: 12px; color: #aaa; margin-bottom: 15px;">Проходите этапы накопления для бонусов!</p>
+      <div id="tasksList"></div>
+    </div>
+
+    <!-- 3. МАГАЗИН -->
+    <div id="tab-shop" class="tab-content">
+      <h3>⭐ Магазин</h3>
+      <p style="font-size: 12px; color: #aaa; margin-bottom: 15px;">Ускоряйте фарм и прокачивайте аккаунт!</p>
+      <div id="starsShopList"></div>
+    </div>
+
+    <!-- 4. МАЙНИНГ (КАРТЫ) -->
+    <div id="tab-cards" class="tab-content">
+      <h3>📈 Карточки Майнинга</h3>
+      <div id="cardsList"></div>
+    </div>
+
+    <!-- 5. ДРУЗЬЯ -->
+    <div id="tab-ref" class="tab-content">
+      <h3>👥 Пригласи Друзей</h3>
+      <p style="font-size: 13px; color: #aaa;">Получайте +10,000 ֏ за каждого друга!</p>
+      <div style="margin: 20px 0;">Приглашено: <strong id="refCount">0</strong></div>
+      <button class="btn-action" style="width: 100%; padding: 12px;" onclick="copyRefLink()">Скопировать ссылку</button>
+    </div>
+
+    <!-- 6. АДМИН ПАНЕЛЬ -->
+    <div id="tab-admin" class="tab-content">
+      <h3 style="color: #ff9800;">👑 Панель Администратора</h3>
+      <div class="admin-form">
+        <label style="font-size: 12px;">Выдать Баланс (֏):</label>
+        <input type="number" id="adminCoinsInput" class="admin-input" value="100000">
+        <button class="btn-action" onclick="adminAddCoins()">Выдать Монеты</button>
+        <hr style="border:0; border-top:1px solid #333; width:100%; margin:5px 0;">
+        <label style="font-size: 12px;">Управление VIP:</label>
+        <button class="btn-action" style="background:#2e7d32;" onclick="adminToggleVip(true)">Включить VIP</button>
+        <button class="btn-action" style="background:#c62828;" onclick="adminToggleVip(false)">Выключить VIP</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- НИЖНЕЕ МЕНЮ -->
+  <div class="navbar">
+    <button class="nav-item active" onclick="switchTab('clicker', this)">
+      <span class="nav-icon">⚡</span> Игра
+    </button>
+    <button class="nav-item" onclick="switchTab('tasks', this)">
+      <span class="nav-icon">🎯</span> Задания
+    </button>
+    <button class="nav-item" onclick="switchTab('shop', this)">
+      <span class="nav-icon">⭐</span> Магазин
+    </button>
+    <button class="nav-item" onclick="switchTab('cards', this)">
+      <span class="nav-icon">📈</span> Майнинг
+    </button>
+    <button class="nav-item" onclick="switchTab('ref', this)">
+      <span class="nav-icon">👥</span> Друзья
+    </button>
+    <button class="nav-item" id="adminNavBtn" style="display:none;" onclick="switchTab('admin', this)">
+      <span class="nav-icon">👑</span> Админ
+    </button>
+  </div>
+
+  <script>
+    const tg = window.Telegram?.WebApp || {};
+    if (tg.ready) tg.ready();
+    if (tg.expand) tg.expand();
+
+    const userId = tg.initDataUnsafe?.user?.id || 'local_user';
+    const ADMIN_ID = 6894427356; // Сюда можешь вписать свой ID
+
+    if (Number(userId) === Number(ADMIN_ID)) {
+      const adminBtn = document.getElementById('adminNavBtn');
+      if (adminBtn) adminBtn.style.display = 'flex';
+    }
+
+    let state = {
+      coins: 0,
+      level: 1,
+      energy: 500,
+      maxEnergy: 500,
+      profitPerHour: 0,
+      clickPower: 1,
+      isVip: false,
+      referralsCount: 0,
+      cards: {}
+    };
+
+    let completedTasks = [];
+
+    const CARDS = [
+      { id: 'card_1', name: 'Видеокарта', baseCost: 100, profit: 10 },
+      { id: 'card_2', name: 'Ферма', baseCost: 500, profit: 50 },
+      { id: 'card_3', name: 'Дата-центр', baseCost: 2500, profit: 250 }
+    ];
+
+    const SHOP_ITEMS = [
+      { id: 'vip_pass', name: '⭐ VIP Статус (+50% доход)', desc: 'Увеличивает доход на 50%', price: 50, apply: () => { state.isVip = true; } },
+      { id: 'turbo_click', name: '⚡ Турбо Кликер (+3 к клику)', desc: 'Добавляет +3 к каждому клику', price: 25, apply: () => { state.clickPower += 3; } }
+    ];
+
+    const GAME_TASKS = [
+      { id: 'reach_5k', title: 'Накопить 5,000 ֏', target: 5000, reward: 500 },
+      { id: 'reach_25k', title: 'Накопить 25,000 ֏', target: 25000, reward: 2500 },
+      { id: 'reach_100k', title: 'Накопить 100,000 ֏', target: 100000, reward: 10000 }
+    ];
+
+    const LEVEL_THRESHOLDS = [
+      { lvl: 1, name: 'LVL 1: Новичок', max: 10000, icon: '🪙' },
+      { lvl: 2, name: 'LVL 2: Боец', max: 50000, icon: '💵' },
+      { lvl: 3, name: 'LVL 3: Мастер', max: 250000, icon: '💶' },
+      { lvl: 4, name: 'LVL 4: Легенда', max: 1000000, icon: '👑' }
+    ];
+
+    function loadData() {
+      try {
+        const saved = localStorage.getItem(`game_state_${userId}`);
+        if (saved) {
+          state = { ...state, ...JSON.parse(saved) };
+        }
+        const savedTasks = localStorage.getItem(`completed_tasks_${userId}`);
+        if (savedTasks) {
+          completedTasks = JSON.parse(savedTasks);
+        }
+      } catch (e) {}
+    }
+
+    function saveData() {
+      try {
+        localStorage.setItem(`game_state_${userId}`, JSON.stringify(state));
+      } catch (e) {}
+    }
+
+    function updateUI() {
+      document.getElementById('coins').innerText = Math.floor(state.coins).toLocaleString();
+      document.getElementById('energy').innerText = `${state.energy}/${state.maxEnergy}`;
+      
+      const effectiveProfit = Math.floor(state.profitPerHour * (state.isVip ? 1.5 : 1));
+      document.getElementById('profit').innerText = effectiveProfit.toLocaleString();
+      document.getElementById('refCount').innerText = state.referralsCount;
+
+      let currentLvl = LEVEL_THRESHOLDS[0];
+      let prevMax = 0;
+      for (let i = 0; i < LEVEL_THRESHOLDS.length; i++) {
+        if (state.coins >= LEVEL_THRESHOLDS[i].max) {
+          prevMax = LEVEL_THRESHOLDS[i].max;
+        } else {
+          currentLvl = LEVEL_THRESHOLDS[i];
+          break;
+        }
+      }
+
+      state.level = currentLvl.lvl;
+      document.getElementById('lvlName').innerText = currentLvl.name;
+      document.getElementById('tapBtn').innerText = currentLvl.icon;
+
+      const progressCoins = state.coins - prevMax;
+      const totalNeeded = currentLvl.max - prevMax;
+      const percent = currentLvl.max === Infinity ? 100 : Math.min(100, Math.max(0, (progressCoins / totalNeeded) * 100));
+
+      document.getElementById('lvlRatio').innerText = `${Math.floor(state.coins).toLocaleString()} / ${currentLvl.max === Infinity ? 'MAX' : currentLvl.max.toLocaleString()}`;
+      document.getElementById('lvlProgress').style.width = `${percent}%`;
+
+      const badge = document.getElementById('vipBadge');
+      if (state.isVip) {
+        badge.innerText = '⭐ VIP АКТИВЕН';
+        badge.classList.add('active');
+      } else {
+        badge.innerText = '⭐ VIP НЕ АКТИВЕН';
+        badge.classList.remove('active');
+      }
+
+      renderCards();
+      renderTasks();
+      renderShop();
+    }
+
+    document.getElementById('tapBtn').addEventListener('click', (e) => {
+      if (state.energy > 0) {
+        const earned = state.clickPower * (state.isVip ? 1.5 : 1);
+        state.coins += earned;
+        state.energy -= 1;
+        saveData();
+        updateUI();
+
+        const floatText = document.createElement('div');
+        floatText.className = 'floating-text';
+        floatText.innerText = `+${earned}`;
+        const rect = document.getElementById('clickArea').getBoundingClientRect();
+        floatText.style.left = `${e.clientX - rect.left - 10}px`;
+        floatText.style.top = `${e.clientY - rect.top - 20}px`;
+        document.getElementById('clickArea').appendChild(floatText);
+        setTimeout(() => floatText.remove(), 700);
+      }
+    });
+
+    function renderCards() {
+      const container = document.getElementById('cardsList');
+      container.innerHTML = '';
+
+      CARDS.forEach(card => {
+        const lvl = state.cards[card.id] || 0;
+        const cost = Math.floor(card.baseCost * Math.pow(1.5, lvl));
+
+        container.innerHTML += `
+          <div class="card">
+            <div>
+              <strong>${card.name}</strong><br>
+              <small>Ур. ${lvl} | +${card.profit} /ч</small><br>
+              <span style="color:#ffd700">${cost.toLocaleString()} ֏</span>
+            </div>
+            <button class="btn-action" ${state.coins < cost ? 'disabled' : ''} onclick="buyCard('${card.id}', ${cost}, ${card.profit})">
+              Купить
+            </button>
+          </div>
+        `;
+      });
+    }
+
+    function buyCard(cardId, cost, profit) {
+      if (state.coins >= cost) {
+        state.coins -= cost;
+        state.cards[cardId] = (state.cards[cardId] || 0) + 1;
+        state.profitPerHour += profit;
+        saveData();
+        updateUI();
+      }
+    }
+
+    function renderTasks() {
+      const container = document.getElementById('tasksList');
+      container.innerHTML = '';
+
+      GAME_TASKS.forEach(task => {
+        const isCompleted = completedTasks.includes(task.id);
+        const canClaim = state.coins >= task.target && !isCompleted;
+
+        let btnHTML = '';
+        if (isCompleted) {
+          btnHTML = `<button class="btn-claimed">✓ Получено</button>`;
+        } else if (canClaim) {
+          btnHTML = `<button class="btn-action" onclick="claimTask('${task.id}', ${task.reward})">Забрать</button>`;
+        } else {
+          btnHTML = `<button class="btn-action" disabled>${Math.floor(state.coins).toLocaleString()}/${task.target.toLocaleString()}</button>`;
+        }
+
+        container.innerHTML += `
+          <div class="task-card">
+            <div>
+              <strong>${task.title}</strong><br>
+              <small style="color:#ffd700">Награда: +${task.reward.toLocaleString()} ֏</small>
+            </div>
+            ${btnHTML}
+          </div>
+        `;
+      });
+    }
+
+    function claimTask(taskId, reward) {
+      if (completedTasks.includes(taskId)) return;
+      completedTasks.push(taskId);
+      localStorage.setItem(`completed_tasks_${userId}`, JSON.stringify(completedTasks));
+
+      state.coins += reward;
+      saveData();
+      updateUI();
+      alert(`Награда получена: +${reward} ֏!`);
+    }
+
+    function renderShop() {
+      const container = document.getElementById('starsShopList');
+      container.innerHTML = '';
+
+      SHOP_ITEMS.forEach(item => {
+        container.innerHTML += `
+          <div class="shop-card">
+            <div>
+              <strong>${item.name}</strong><br>
+              <small style="color:#aaa">${item.desc}</small>
+            </div>
+            <button class="btn-stars" onclick="buyShopItem('${item.id}', ${item.price})">
+              ⭐ ${item.price}
+            </button>
+          </div>
+        `;
+      });
+    }
+
+    function buyShopItem(itemId, price) {
+      const item = SHOP_ITEMS.find(i => i.id === itemId);
+      if (!item) return;
+      
+      item.apply();
+      saveData();
+      updateUI();
+      alert(`Успешно куплено: ${item.name}!`);
+    }
+
+    function switchTab(tabId, el) {
+      document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+      document.getElementById(`tab-${tabId}`).classList.add('active');
+      el.classList.add('active');
+    }
+
+    function copyRefLink() {
+      const link = `https://t.me/CoinKombat_Bot?start=${userId}`;
+      navigator.clipboard?.writeText(link);
+      alert('Реферальная ссылка скопирована!');
+    }
+
+    function adminAddCoins() {
+      const val = parseInt(document.getElementById('adminCoinsInput').value) || 0;
+      state.coins += val;
+      saveData();
+      updateUI();
+      alert(`Выдано ${val} монет!`);
+    }
+
+    function adminToggleVip(status) {
+      state.isVip = status;
+      saveData();
+      updateUI();
+      alert(`VIP статус изменен!`);
+    }
+
+    setInterval(() => {
+      const effectiveProfit = state.profitPerHour * (state.isVip ? 1.5 : 1);
+      if (effectiveProfit > 0) {
+        state.coins += effectiveProfit / 3600;
+      }
+      if (state.energy < state.maxEnergy) {
+        state.energy = Math.min(state.maxEnergy, state.energy + 1);
+      }
+      saveData();
+      updateUI();
+    }, 1000);
+
+    loadData();
+    updateUI();
+  </script>
+</body>
+</html>
       border-radius: 10px;
       overflow: hidden;
     }
