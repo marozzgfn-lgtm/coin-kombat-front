@@ -268,13 +268,13 @@
   </div>
 
   <script>
-    const tg = window.Telegram.WebApp;
-    tg.ready();
-    tg.expand();
+    const tg = window.Telegram?.WebApp || {};
+    if (tg.ready) tg.ready();
+    if (tg.expand) tg.expand();
 
     const API_URL = 'https://coin-kombat-back.onrender.com/api/user';
-    const userId = tg.initDataUnsafe.user?.id || 123456;
-    const startParam = tg.initDataUnsafe.start_param || null;
+    const userId = tg.initDataUnsafe?.user?.id || 123456;
+    const startParam = tg.initDataUnsafe?.start_param || null;
     const REF_BONUS = 10000;
 
     let state = { 
@@ -286,11 +286,18 @@
       referralsCount: 0,
       clickPower: 1,
       hasAutoBot: false,
-      starsMultiplier: 1
+      starsMultiplier: 1,
+      cards: {}
     };
     
     let cardsData = {};
-    let completedTasks = JSON.parse(localStorage.getItem(`completed_tasks_${userId}`) || '[]');
+    let completedTasks = [];
+    
+    try {
+      completedTasks = JSON.parse(localStorage.getItem(`completed_tasks_${userId}`) || '[]');
+    } catch (e) {
+      completedTasks = [];
+    }
 
     const LOCAL_STARS_SHOP = [
       { id: 'vip_pass', name: '⭐ VIP Статус (+50% к Доходу)', desc: 'Повышает всю прибыль на 50% и дает VIP значок', stars: 50, apply: () => { state.isVip = true; } },
@@ -326,25 +333,38 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ userId, referrerId: startParam, refReward: REF_BONUS })
         });
+        if (!res.ok) throw new Error('Network error');
         const data = await res.json();
-        state = { ...state, ...data.user };
-        cardsData = data.cardsConfig || {};
-        
+        if (data && data.user) {
+          state = { ...state, ...data.user };
+        }
+        if (data && data.cardsConfig) {
+          cardsData = data.cardsConfig;
+        }
+      } catch (err) { 
+        console.error('Sync failed:', err); 
+      } finally {
         updateUI();
         renderCards();
         renderShop();
         renderTasks();
-      } catch (err) { console.error(err); }
+      }
     }
 
     function updateUI() {
-      const currentCoins = Math.floor(state.coins);
-      document.getElementById('coins').innerText = currentCoins.toLocaleString();
-      document.getElementById('energy').innerText = state.energy;
+      const currentCoins = Math.floor(state.coins || 0);
+      const coinsEl = document.getElementById('coins');
+      if (coinsEl) coinsEl.innerText = currentCoins.toLocaleString();
       
-      const effectiveProfit = Math.floor(state.profitPerHour * (state.isVip ? 1.5 : 1) * state.starsMultiplier);
-      document.getElementById('profit').innerText = effectiveProfit.toLocaleString();
-      document.getElementById('refCount').innerText = state.referralsCount || 0;
+      const energyEl = document.getElementById('energy');
+      if (energyEl) energyEl.innerText = `${state.energy || 0}/${state.maxEnergy || 500}`;
+      
+      const effectiveProfit = Math.floor((state.profitPerHour || 0) * (state.isVip ? 1.5 : 1) * (state.starsMultiplier || 1));
+      const profitEl = document.getElementById('profit');
+      if (profitEl) profitEl.innerText = effectiveProfit.toLocaleString();
+
+      const refEl = document.getElementById('refCount');
+      if (refEl) refEl.innerText = state.referralsCount || 0;
 
       let currentLvl = LEVEL_THRESHOLDS[0];
       let prevThreshold = 0;
@@ -358,28 +378,36 @@
         }
       }
 
-      document.getElementById('lvlName').innerText = currentLvl.name;
-      document.getElementById('tapBtn').innerText = currentLvl.icon;
+      const lvlNameEl = document.getElementById('lvlName');
+      if (lvlNameEl) lvlNameEl.innerText = currentLvl.name;
+
+      const tapBtnEl = document.getElementById('tapBtn');
+      if (tapBtnEl) tapBtnEl.innerText = currentLvl.icon;
+
+      const lvlRatioEl = document.getElementById('lvlRatio');
+      const lvlProgressEl = document.getElementById('lvlProgress');
 
       if (currentLvl.max === Infinity) {
-        document.getElementById('lvlRatio').innerText = `${currentCoins.toLocaleString()} ֏ (MAX)`;
-        document.getElementById('lvlProgress').style.width = '100%';
+        if (lvlRatioEl) lvlRatioEl.innerText = `${currentCoins.toLocaleString()} ֏ (MAX)`;
+        if (lvlProgressEl) lvlProgressEl.style.width = '100%';
       } else {
         const progressCoins = currentCoins - prevThreshold;
         const totalCoinsNeeded = currentLvl.max - prevThreshold;
         const percent = Math.min(100, Math.max(0, (progressCoins / totalCoinsNeeded) * 100));
 
-        document.getElementById('lvlRatio').innerText = `${currentCoins.toLocaleString()} ֏ / ${currentLvl.max.toLocaleString()} ֏`;
-        document.getElementById('lvlProgress').style.width = `${percent}%`;
+        if (lvlRatioEl) lvlRatioEl.innerText = `${currentCoins.toLocaleString()} ֏ / ${currentLvl.max.toLocaleString()} ֏`;
+        if (lvlProgressEl) lvlProgressEl.style.width = `${percent}%`;
       }
 
       const badge = document.getElementById('vipBadge');
-      if (state.isVip) {
-        badge.innerText = '⭐ VIP АКТИВЕН';
-        badge.classList.add('active');
-      } else {
-        badge.innerText = '⭐ VIP НЕ АКТИВЕН';
-        badge.classList.remove('active');
+      if (badge) {
+        if (state.isVip) {
+          badge.innerText = '⭐ VIP АКТИВЕН';
+          badge.classList.add('active');
+        } else {
+          badge.innerText = '⭐ VIP НЕ АКТИВЕН';
+          badge.classList.remove('active');
+        }
       }
 
       renderTasks();
@@ -388,32 +416,40 @@
     const tapBtn = document.getElementById('tapBtn');
     const clickArea = document.getElementById('clickArea');
 
-    tapBtn.addEventListener('click', async (e) => {
-      if (state.energy > 0) {
-        const multiplier = state.isVip ? 1.5 : 1;
-        const earned = Math.round(state.clickPower * multiplier);
-        
-        state.coins += earned;
-        state.energy -= 1;
-        updateUI();
+    if (tapBtn) {
+      tapBtn.addEventListener('click', async (e) => {
+        if ((state.energy || 0) > 0) {
+          const multiplier = state.isVip ? 1.5 : 1;
+          const earned = Math.round((state.clickPower || 1) * multiplier);
+          
+          state.coins = (state.coins || 0) + earned;
+          state.energy = (state.energy || 1) - 1;
+          updateUI();
 
-        const floatText = document.createElement('div');
-        floatText.className = 'floating-text';
-        floatText.innerText = `+${earned} ֏`;
-        
-        const rect = clickArea.getBoundingClientRect();
-        floatText.style.left = `${e.clientX - rect.left - 10}px`;
-        floatText.style.top = `${e.clientY - rect.top - 20}px`;
-        clickArea.appendChild(floatText);
-        setTimeout(() => floatText.remove(), 700);
+          if (clickArea) {
+            const floatText = document.createElement('div');
+            floatText.className = 'floating-text';
+            floatText.innerText = `+${earned} ֏`;
+            
+            const rect = clickArea.getBoundingClientRect();
+            floatText.style.left = `${e.clientX - rect.left - 10}px`;
+            floatText.style.top = `${e.clientY - rect.top - 20}px`;
+            clickArea.appendChild(floatText);
+            setTimeout(() => floatText.remove(), 700);
+          }
 
-        await fetch(`${API_URL}/tap`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId, count: 1 })
-        });
-      }
-    });
+          try {
+            await fetch(`${API_URL}/tap`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ userId, count: 1 })
+            });
+          } catch (err) {
+            console.error('Tap sync error:', err);
+          }
+        }
+      });
+    }
 
     function renderTasks() {
       const container = document.getElementById('tasksList');
@@ -422,7 +458,7 @@
 
       GAME_TASKS.forEach(task => {
         const isCompleted = completedTasks.includes(task.id);
-        const canClaim = state.coins >= task.target && !isCompleted;
+        const canClaim = (state.coins || 0) >= task.target && !isCompleted;
 
         let btnHTML = '';
         if (isCompleted) {
@@ -430,7 +466,7 @@
         } else if (canClaim) {
           btnHTML = `<button class="btn-action" onclick="claimTask('${task.id}', ${task.reward})">Забрать</button>`;
         } else {
-          btnHTML = `<button class="btn-action" disabled>${Math.floor(state.coins).toLocaleString()}/${task.target.toLocaleString()}</button>`;
+          btnHTML = `<button class="btn-action" disabled>${Math.floor(state.coins || 0).toLocaleString()}/${task.target.toLocaleString()}</button>`;
         }
 
         container.innerHTML += `
@@ -449,19 +485,24 @@
       if (completedTasks.includes(taskId)) return;
 
       completedTasks.push(taskId);
-      localStorage.setItem(`completed_tasks_${userId}`, JSON.stringify(completedTasks));
+      try {
+        localStorage.setItem(`completed_tasks_${userId}`, JSON.stringify(completedTasks));
+      } catch (e) {}
 
-      state.coins += reward;
+      state.coins = (state.coins || 0) + reward;
       updateUI();
+      
+      const msg = `Вы успешно получили +${reward.toLocaleString()} ֏!`;
       if (tg.showAlert) {
-        tg.showAlert(`Вы успешно получили +${reward.toLocaleString()} ֏!`);
+        tg.showAlert(msg);
       } else {
-        alert(`Вы успешно получили +${reward.toLocaleString()} ֏!`);
+        alert(msg);
       }
     }
 
     function renderShop() {
       const container = document.getElementById('starsShopList');
+      if (!container) return;
       container.innerHTML = '';
       
       LOCAL_STARS_SHOP.forEach(item => {
@@ -484,11 +525,9 @@
       if (!item) return;
 
       if (!tg.initDataUnsafe || !tg.initDataUnsafe.user) {
-        if (tg.showAlert) {
-          tg.showAlert(`Для покупки через Telegram Stars открывайте игру внутри приложения Telegram.`);
-        } else {
-          alert(`Для покупки через Telegram Stars открывайте игру внутри приложения Telegram.`);
-        }
+        const msg = 'Для покупки через Telegram Stars открывайте игру внутри приложения Telegram.';
+        if (tg.showAlert) tg.showAlert(msg);
+        else alert(msg);
         return;
       }
 
@@ -500,7 +539,7 @@
         });
         const data = await res.json();
 
-        if (data.invoiceUrl && tg.openInvoice) {
+        if (data && data.invoiceUrl && tg.openInvoice) {
           tg.openInvoice(data.invoiceUrl, (status) => {
             if (status === 'paid') {
               item.apply();
@@ -513,18 +552,14 @@
             }
           });
         } else {
-          if (tg.showAlert) {
-            tg.showAlert(`Недостаточно Telegram Stars или ошибка создания инвойса.`);
-          } else {
-            alert(`Недостаточно Telegram Stars или ошибка создания инвойса.`);
-          }
+          const msg = 'Недостаточно Telegram Stars или ошибка создания инвойса.';
+          if (tg.showAlert) tg.showAlert(msg);
+          else alert(msg);
         }
       } catch (err) {
-        if (tg.showAlert) {
-          tg.showAlert(`Для оплаты требуется баланс Telegram Stars. Нажмите еще раз или пополните счет Stars.`);
-        } else {
-          alert(`Для оплаты требуется баланс Telegram Stars. Нажмите еще раз или пополните счет Stars.`);
-        }
+        const msg = 'Для оплаты требуется баланс Telegram Stars. Нажмите еще раз или пополните счет Stars.';
+        if (tg.showAlert) tg.showAlert(msg);
+        else alert(msg);
       }
     }
 
@@ -532,16 +567,24 @@
       document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
       document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
       
-      document.getElementById(`tab-${tabId}`).classList.add('active');
-      el.classList.add('active');
+      const targetTab = document.getElementById(`tab-${tabId}`);
+      if (targetTab) targetTab.classList.add('active');
+      if (el) el.classList.add('active');
     }
 
     function renderCards() {
       const container = document.getElementById('cardsList');
+      if (!container) return;
       container.innerHTML = '';
+      
+      if (!cardsData || Object.keys(cardsData).length === 0) {
+        container.innerHTML = '<div style="color:#aaa;">Загрузка карточек...</div>';
+        return;
+      }
+
       for (const key in cardsData) {
         const card = cardsData[key];
-        const lvl = state.cards ? (state.cards[key] || 0) : 0;
+        const lvl = (state.cards && state.cards[key]) ? state.cards[key] : 0;
         const cost = Math.floor(card.baseCost * Math.pow(1.85, lvl));
 
         container.innerHTML += `
@@ -558,36 +601,44 @@
     }
 
     async function buyCard(cardId) {
-      const res = await fetch(`${API_URL}/buy-card`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, cardId })
-      });
-      const data = await res.json();
-      if (data.success) syncData();
-      else {
-        if (tg.showAlert) tg.showAlert(data.error);
-        else alert(data.error);
+      try {
+        const res = await fetch(`${API_URL}/buy-card`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId, cardId })
+        });
+        const data = await res.json();
+        if (data && data.success) {
+          syncData();
+        } else {
+          const msg = data.error || 'Ошибка покупки';
+          if (tg.showAlert) tg.showAlert(msg);
+          else alert(msg);
+        }
+      } catch (err) {
+        console.error('Buy card error:', err);
       }
     }
 
     function copyRefLink() {
       const link = `https://t.me/CoinKombat_Bot?start=${userId}`;
-      navigator.clipboard.writeText(link);
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(link);
+      }
       if (tg.showAlert) tg.showAlert('Ссылка скопирована!');
       else alert('Ссылка скопирована!');
     }
 
     setInterval(() => {
-      const effectiveProfit = state.profitPerHour * (state.isVip ? 1.5 : 1) * state.starsMultiplier;
+      const effectiveProfit = (state.profitPerHour || 0) * (state.isVip ? 1.5 : 1) * (state.starsMultiplier || 1);
       if (effectiveProfit > 0) {
-        state.coins += (effectiveProfit / 3600);
+        state.coins = (state.coins || 0) + (effectiveProfit / 3600);
       }
       if (state.hasAutoBot) {
-        state.coins += 1;
+        state.coins = (state.coins || 0) + 1;
       }
-      if (state.energy < state.maxEnergy) {
-        state.energy = Math.min(state.maxEnergy, state.energy + 1);
+      if ((state.energy || 0) < (state.maxEnergy || 500)) {
+        state.energy = Math.min(state.maxEnergy || 500, (state.energy || 0) + 1);
       }
       updateUI();
     }, 1000);
