@@ -1,22 +1,109 @@
-const express = require('express'
-const cors = require('cors');
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Coin Kombat</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    body { font-family: sans-serif; background: #121212; color: white; text-align: center; margin: 0; padding: 20px; }
+    h1 { color: #ff9800; margin-bottom: 5px; }
+    .coin-display { font-size: 32px; font-weight: bold; margin: 20px 0; color: #ffd700; }
+    .click-btn { width: 180px; height: 180px; border-radius: 50%; background: radial-gradient(circle, #ff9800, #e65100); border: none; font-size: 24px; color: white; cursor: pointer; box-shadow: 0 0 15px rgba(255,152,0,0.5); }
+    .click-btn:active { transform: scale(0.95); }
+    .stats { margin: 15px 0; font-size: 14px; color: #aaa; }
+    .cards-container { margin-top: 30px; display: flex; flex-direction: column; gap: 10px; }
+    .card { background: #1e1e1e; padding: 15px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; }
+    .card button { background: #4caf50; border: none; color: white; padding: 8px 12px; border-radius: 4px; }
+  </style>
+</head>
+<body>
 
-const app = express();
-app.use(cors());
-app.use(express.json());
+  <h1>Coin Kombat</h1>
+  <div class="stats">Прибыль в час: <span id="profit">0</span>/час</div>
+  <div class="coin-display" id="coins">0</div>
+  <button class="click-btn" id="tapBtn">KOMBAT!</button>
+  <div class="stats">Энергия: <span id="energy">1000</span>/1000</div>
 
-const users = {};
+  <div class="cards-container" id="cards"></div>
 
-const CARDS = {
-  marketing: { id: 'marketing', name: 'Реклама Coin Kombat', baseCost: 100, profitPerHour: 50 },
-  servers: { id: 'servers', name: 'Сервера Kombat', baseCost: 500, profitPerHour: 300 }
-};
+  <script>
+    const tg = window.Telegram.WebApp;
+    tg.ready();
 
-app.post('/api/user/sync', (req, res) => {
-  const { userId } = req.body;
-  if (!users[userId]) {
-    users[userId] = {
-      coins  user.coins += passiveEarned;
-  user.lastUpdate = now;
+    // Ссылку на Render подставите сюда после шага 2
+    const API_URL = 'https://YOUR-RENDER-APP.onrender.com/api/user';
+    const userId = tg.initDataUnsafe.user?.id || 123456;
 
-  res.
+    let state = { coins: 0, energy: 1000, profitPerHour: 0 };
+
+    async function syncData() {
+      const res = await fetch(`${API_URL}/sync`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId })
+      });
+      const data = await res.json();
+      state = data.user;
+      updateUI();
+      renderCards(data.cardsConfig);
+    }
+
+    function updateUI() {
+      document.getElementById('coins').innerText = Math.floor(state.coins);
+      document.getElementById('energy').innerText = state.energy;
+      document.getElementById('profit').innerText = state.profitPerHour;
+    }
+
+    document.getElementById('tapBtn').addEventListener('click', async () => {
+      if (state.energy > 0) {
+        state.coins += 1;
+        state.energy -= 1;
+        updateUI();
+        await fetch(`${API_URL}/tap`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId, count: 1 })
+        });
+      }
+    });
+
+    function renderCards(cardsConfig) {
+      const container = document.getElementById('cards');
+      container.innerHTML = '';
+      for (const key in cardsConfig) {
+        const card = cardsConfig[key];
+        const lvl = state.cards[key] || 0;
+        const cost = Math.floor(card.baseCost * Math.pow(1.5, lvl));
+
+        const div = document.createElement('div');
+        div.className = 'card';
+        div.innerHTML = `
+          <div>
+            <strong>${card.name}</strong> (Уровень ${lvl})<br>
+            +${card.profitPerHour}/ч | Цена: ${cost}
+          </div>
+          <button onclick="buyCard('${card.id}')">Прокачать</button>
+        `;
+        container.appendChild(div);
+      }
+    }
+
+    async function buyCard(cardId) {
+      const res = await fetch(`${API_URL}/buy-card`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, cardId })
+      });
+      const data = await res.json();
+      if (data.success) {
+        syncData();
+      } else {
+        alert(data.error);
+      }
+    }
+
+    syncData();
+  </script>
+</body>
+</html>
