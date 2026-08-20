@@ -147,7 +147,7 @@
     .nav-item.active { color: #ff9800; font-weight: bold; }
     .nav-icon { font-size: 20px; }
 
-    .card, .shop-card, .task-card {
+    .card, .shop-card, .task-card, .admin-card {
       background: rgba(255, 255, 255, 0.04);
       border: 1px solid rgba(255, 255, 255, 0.08);
       padding: 12px;
@@ -157,6 +157,25 @@
       justify-content: space-between;
       align-items: center;
       text-align: left;
+    }
+
+    .admin-form {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      text-align: left;
+      background: rgba(255, 255, 255, 0.04);
+      padding: 15px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 152, 0, 0.3);
+    }
+    .admin-input {
+      background: #1a1b26;
+      border: 1px solid #333;
+      color: #fff;
+      padding: 10px;
+      border-radius: 8px;
+      outline: none;
     }
 
     .btn-action {
@@ -247,6 +266,23 @@
       <div style="margin: 20px 0;">Приглашено: <strong id="refCount">0</strong></div>
       <button class="btn-action" style="width: 100%; padding: 12px;" onclick="copyRefLink()">Скопировать ссылку</button>
     </div>
+
+    <div id="tab-admin" class="tab-content">
+      <h3 style="color: #ff9800;">👑 Панель Администратора</h3>
+      <div class="admin-form">
+        <label style="font-size: 12px;">Выдать Баланс (֏):</label>
+        <input type="number" id="adminCoinsInput" class="admin-input" placeholder="Количество монет" value="100000">
+        <button class="btn-action" onclick="adminAddCoins()">Выдать Монеты</button>
+        <hr style="border:0; border-top:1px solid #333; width:100%; margin:5px 0;">
+        <label style="font-size: 12px;">Управление VIP:</label>
+        <button class="btn-action" style="background:#2e7d32;" onclick="adminToggleVip(true)">Включить VIP</button>
+        <button class="btn-action" style="background:#c62828;" onclick="adminToggleVip(false)">Выключить VIP</button>
+        <hr style="border:0; border-top:1px solid #333; width:100%; margin:5px 0;">
+        <label style="font-size: 12px;">Добавить Доход в час (+֏/ч):</label>
+        <input type="number" id="adminProfitInput" class="admin-input" placeholder="Сумма дохода" value="50000">
+        <button class="btn-action" onclick="adminAddProfit()">Увеличить Доход</button>
+      </div>
+    </div>
   </div>
 
   <div class="navbar">
@@ -265,6 +301,9 @@
     <button class="nav-item" onclick="switchTab('ref', this)">
       <span class="nav-icon">👥</span> Друзья
     </button>
+    <button class="nav-item" id="adminNavBtn" style="display:none;" onclick="switchTab('admin', this)">
+      <span class="nav-icon">👑</span> Админ
+    </button>
   </div>
 
   <script>
@@ -273,9 +312,10 @@
     if (tg.expand) tg.expand();
 
     const API_URL = 'https://coin-kombat-back.onrender.com/api/user';
-    const userId = tg.initDataUnsafe?.user?.id || 123456;
+    const userId = tg.initDataUnsafe?.user?.id || 6894427356;
     const startParam = tg.initDataUnsafe?.start_param || null;
     const REF_BONUS = 10000;
+    const ADMIN_ID = 6894427356;
 
     let state = { 
       coins: 0, 
@@ -297,6 +337,11 @@
       completedTasks = JSON.parse(localStorage.getItem(`completed_tasks_${userId}`) || '[]');
     } catch (e) {
       completedTasks = [];
+    }
+
+    if (Number(userId) === Number(ADMIN_ID)) {
+      const adminBtn = document.getElementById('adminNavBtn');
+      if (adminBtn) adminBtn.style.display = 'flex';
     }
 
     const LOCAL_STARS_SHOP = [
@@ -493,11 +538,8 @@
       updateUI();
       
       const msg = `Вы успешно получили +${reward.toLocaleString()} ֏!`;
-      if (tg.showAlert) {
-        tg.showAlert(msg);
-      } else {
-        alert(msg);
-      }
+      if (tg.showAlert) tg.showAlert(msg);
+      else alert(msg);
     }
 
     function renderShop() {
@@ -627,6 +669,30 @@
       }
       if (tg.showAlert) tg.showAlert('Ссылка скопирована!');
       else alert('Ссылка скопирована!');
+    }
+
+    function adminAddCoins() {
+      const val = parseInt(document.getElementById('adminCoinsInput').value) || 0;
+      state.coins = (state.coins || 0) + val;
+      updateUI();
+      if (tg.showAlert) tg.showAlert(`Выдано ${val.toLocaleString()} ֏!`);
+      else alert(`Выдано ${val.toLocaleString()} ֏!`);
+    }
+
+    function adminToggleVip(status) {
+      state.isVip = status;
+      updateUI();
+      const text = status ? 'активирован' : 'деактивирован';
+      if (tg.showAlert) tg.showAlert(`VIP статус ${text}!`);
+      else alert(`VIP статус ${text}!`);
+    }
+
+    function adminAddProfit() {
+      const val = parseInt(document.getElementById('adminProfitInput').value) || 0;
+      state.profitPerHour = (state.profitPerHour || 0) + val;
+      updateUI();
+      if (tg.showAlert) tg.showAlert(`Доход увеличен на +${val.toLocaleString()} ֏/ч!`);
+      else alert(`Доход увеличен на +${val.toLocaleString()} ֏/ч!`);
     }
 
     setInterval(() => {
