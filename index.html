@@ -243,7 +243,7 @@
 
     <div id="tab-ref" class="tab-content">
       <h3>Пригласи Друзей</h3>
-      <p style="font-size: 13px; color: #aaa;">Получайте +2,500 ֏ за каждого друга!</p>
+      <p style="font-size: 13px; color: #aaa;">Получайте +10,000 ֏ за каждого друга!</p>
       <div style="margin: 20px 0;">Приглашено: <strong id="refCount">0</strong></div>
       <button class="btn-action" style="width: 100%; padding: 12px;" onclick="copyRefLink()">Скопировать ссылку</button>
     </div>
@@ -275,6 +275,7 @@
     const API_URL = 'https://coin-kombat-back.onrender.com/api/user';
     const userId = tg.initDataUnsafe.user?.id || 123456;
     const startParam = tg.initDataUnsafe.start_param || null;
+    const REF_BONUS = 10000;
 
     let state = { 
       coins: 0, 
@@ -323,7 +324,7 @@
         const res = await fetch(`${API_URL}/sync`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId, referrerId: startParam })
+          body: JSON.stringify({ userId, referrerId: startParam, refReward: REF_BONUS })
         });
         const data = await res.json();
         state = { ...state, ...data.user };
@@ -452,7 +453,11 @@
 
       state.coins += reward;
       updateUI();
-      alert(`Вы успешно получили +${reward.toLocaleString()} ֏!`);
+      if (tg.showAlert) {
+        tg.showAlert(`Вы успешно получили +${reward.toLocaleString()} ֏!`);
+      } else {
+        alert(`Вы успешно получили +${reward.toLocaleString()} ֏!`);
+      }
     }
 
     function renderShop() {
@@ -478,18 +483,48 @@
       const item = LOCAL_STARS_SHOP.find(i => i.id === itemId);
       if (!item) return;
 
-      if (tg.openInvoice) {
-        tg.openInvoice(`https://t.me/invoice/${itemId}`, async (status) => {
-          if (status === 'paid') {
-            item.apply();
-            updateUI();
-            alert(`Успешно куплено: ${item.name}!`);
-          }
+      if (!tg.initDataUnsafe || !tg.initDataUnsafe.user) {
+        if (tg.showAlert) {
+          tg.showAlert(`Для покупки через Telegram Stars открывайте игру внутри приложения Telegram.`);
+        } else {
+          alert(`Для покупки через Telegram Stars открывайте игру внутри приложения Telegram.`);
+        }
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API_URL}/create-stars-invoice`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId, itemId, stars: item.stars, title: item.name })
         });
-      } else {
-        item.apply();
-        updateUI();
-        alert(`[Тест] Успешно куплено: ${item.name}!`);
+        const data = await res.json();
+
+        if (data.invoiceUrl && tg.openInvoice) {
+          tg.openInvoice(data.invoiceUrl, (status) => {
+            if (status === 'paid') {
+              item.apply();
+              updateUI();
+              if (tg.showAlert) tg.showAlert(`Успешно куплено: ${item.name}!`);
+            } else if (status === 'cancelled') {
+              if (tg.showAlert) tg.showAlert('Оплата отменена.');
+            } else {
+              if (tg.showAlert) tg.showAlert('Не удалось завершить оплату или недостаточно Stars на балансе.');
+            }
+          });
+        } else {
+          if (tg.showAlert) {
+            tg.showAlert(`Недостаточно Telegram Stars или ошибка создания инвойса.`);
+          } else {
+            alert(`Недостаточно Telegram Stars или ошибка создания инвойса.`);
+          }
+        }
+      } catch (err) {
+        if (tg.showAlert) {
+          tg.showAlert(`Для оплаты требуется баланс Telegram Stars. Нажмите еще раз или пополните счет Stars.`);
+        } else {
+          alert(`Для оплаты требуется баланс Telegram Stars. Нажмите еще раз или пополните счет Stars.`);
+        }
       }
     }
 
@@ -530,13 +565,17 @@
       });
       const data = await res.json();
       if (data.success) syncData();
-      else alert(data.error);
+      else {
+        if (tg.showAlert) tg.showAlert(data.error);
+        else alert(data.error);
+      }
     }
 
     function copyRefLink() {
       const link = `https://t.me/CoinKombat_Bot?start=${userId}`;
       navigator.clipboard.writeText(link);
-      alert('Ссылка скопирована!');
+      if (tg.showAlert) tg.showAlert('Ссылка скопирована!');
+      else alert('Ссылка скопирована!');
     }
 
     setInterval(() => {
